@@ -1,0 +1,279 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+# Lecture des données
+```{r}
+table <- read.csv ("kidney_disease.csv")
+str(table)
+
+table_t<-as.data.frame(matrix(0,nrow=400,ncol=26))
+
+```
+
+# Préparation des données: convertion
+```{r}
+for (j in 1:26){
+table_t[,j]<-as.numeric(as.character(table[,j]))
+
+}
+for (j in 7:10){
+table_t[,j]<-as.character(table[,j])
+
+}
+for (j in 20:26){
+table_t[,j]<-as.character(table[,j])
+
+}
+
+colnames(table_t) <- names(table)
+
+```
+
+
+# Detection des valeurs manquantes
+```{r}
+n<-nrow(table_t)
+d<-ncol(table_t)
+h<-rep(0,n)
+
+for(i in 1:n){
+  for(j in 1:d){
+    if(is.numeric(table_t[i,j])& is.na(table_t[i,j])){h[i]<-h[i]+1}
+    if(is.character(table_t[i,j])& table_t[i,j]==""){h[i]<-h[i]+1}
+  }
+}
+```
+
+# Gardons les observations ayant moins de 7 NA
+```{r}
+table_t <- table_t[h<7,1:ncol(table_t)]
+```
+
+
+```{r}
+for (i in 1:ncol(table_t)){
+  if (is.numeric(table_t[1:length(table_t),i])){
+    print(sum(is.na(table_t[i])))
+  }
+  else if (is.character(table_t[1:length(table_t),i])){
+    print((sum(table_t[i] == "")))
+  }
+}
+```
+
+# Recodage
+```{r}
+table_n <- table_t
+table_n2<-as.data.frame(matrix(0,nrow=nrow(table_n),ncol=26))
+for (j in 1:6){
+  table_n2[,j]<-table_n[,j]
+}
+for (j in 11:19){
+  table_n2[,j]<-table_n[,j]
+}
+for(j in 20:22){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="yes"){table_n2[i,j]<-1}
+if(table_n[i,j]=="no"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}
+for(j in 24:25){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="yes"){table_n2[i,j]<-1}
+if(table_n[i,j]=="no"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}
+for(j in 7:8){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="normal"){table_n2[i,j]<-1}
+if(table_n[i,j]=="abnormal"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}  
+for(j in 9:10){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="present"){table_n2[i,j]<-1}
+if(table_n[i,j]=="notpresent"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}
+for(j in 23){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="good"){table_n2[i,j]<-1}
+if(table_n[i,j]=="poor"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}
+for(j in 26){
+for (i in 1:nrow(table_n)){
+if(table_n[i,j]=="ckd"){table_n2[i,j]<-1}
+if(table_n[i,j]=="notckd"){table_n2[i,j]<-0}
+if(table_n[i,j]==""){table_n2[i,j]<-NA}
+}
+}
+View(table_n2)
+```
+
+```{r}
+h = rep(0,26)
+for (i in 1:ncol(table_n2)){
+  h[i] <- sum(is.na(table_n2[i]))
+}
+colnames(table_n2) <- names(table_t)
+table_n2 <- table_n2[,which(h<50)]
+
+
+```
+# Imputation des NA par la mediane
+```{r}
+
+for (j in 1:ncol(table_n2)){
+m<-median(table_n2[,j],na.rm=TRUE)
+for (i in 1:nrow(table_n2)){
+  if (is.na(table_n2[i,j])){
+    table_n2[i,j]<-m
+  }
+}
+}
+```
+# Modélisation
+## Modéle linéaire simple
+```{r}
+modele = glm(classification~age, data = table_n2,family = "binomial")
+summary(modele)
+```
+```{r}
+modele = glm(classification~bp, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~sg, data = table_n2,family = "binomial")
+summary(modele)
+```
+```{r}
+modele = glm(classification~al, data = table_n2,family = "binomial")
+summary(modele)
+```
+```{r}
+modele = glm(classification~su, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~bgr, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~bu, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~sc, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~hemo, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~pcv, data = table_n2,family = "binomial")
+summary(modele)
+```
+```{r}
+modele = glm(classification~pc, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+## Modèle linéaire multiple avec les variables quantitatives
+```{r}
+modele = glm(classification~age+bp+sg+al+bgr+bu+sc+hemo+pcv, data = table_n2,family = "binomial")
+summary(modele)
+```
+## Dataset avec les variables quantitatives seules
+```{r}
+table_quantitative<-table_n2[,c(2,3,4,5,10,11,12,13,14)]
+
+```
+
+# Cas des variables qualitatives
+## Modèle linéaire simple
+
+```{r}
+modele = glm(classification~pcc, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~ba, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~htn, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~dm, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~cad, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~appet, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~pe, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+```{r}
+modele = glm(classification~ane, data = table_n2,family = "binomial")
+summary(modele)
+```
+
+## Modèle linéaire multiple
+```{r}
+modele = glm(classification~ane+appet+dm+htn+pcc+pc, data = table_n2,family = "binomial")
+summary(modele)
+table_qualitative<-table_n2[,c(20,18,16,15,7,8)]
+```
+
+
+## Le modèle avec toutes les variables
+
+```{r}
+modele = glm(classification~., data = table_n2,family = "binomial")
+summary(modele)
+```
+
+
+```{r}
+PCA(table_quantitative, scale.unit = TRUE, ncp = 2, graph = TRUE)
+PCA(table_qualitative, scale.unit = TRUE, ncp = 2, graph = TRUE)
+cor(table_quantitative)
+cor(table_qualitative)
+```
+
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
